@@ -40,21 +40,6 @@ local FONT_OBJECT_NAMES = {
 	"DiceMasterFontFullscreen",
 }
 
-local CONFIG_REGISTRY_KEYS = {
-	"DiceMaster",
-	"Health/Resource Bars",
-	"Progress Bar",
-	"Dungeon Manager",
-}
-
-local CONFIG_DISPLAY_NAMES = {
-	config = "DiceMaster",
-	configCharges = "Health/Resource Bars",
-	configProgressBar = "Progress Bar",
-	configManager = "Dungeon Manager",
-	configProfiles = "Profiles",
-}
-
 local LOCALIZED_STRING_FIELDS = {
 	"tooltipTitle",
 	"tooltipText",
@@ -457,23 +442,28 @@ function Me.ApplyLocaleFonts()
 	end
 end
 
-local function RefreshConfigFrames()
-	for frameKey, englishName in pairs(CONFIG_DISPLAY_NAMES) do
-		local frame = Me[frameKey]
-		if frame then
-			frame.name = Me.TranslateText(englishName)
-		end
-	end
+local function GetConfigFrames()
+	return {
+		Me.config,
+		Me.configCharges,
+		Me.configProgressBar,
+		Me.configManager,
+		Me.configProfiles,
+	}
 end
 
-local function NotifyConfigChange()
-	local registry = LibStub and LibStub("AceConfigRegistry-3.0", true)
-	if not registry then
-		return
-	end
+function Me.LocalizeConfigFrames()
+	for _, frame in ipairs(GetConfigFrames()) do
+		if frame and frame.HookScript and not frame.__dmConfigLocalizationHook then
+			frame:HookScript("OnShow", function(shownFrame)
+				Me.LocalizeFrame(shownFrame)
+			end)
+			frame.__dmConfigLocalizationHook = true
+		end
 
-	for _, registryKey in ipairs(CONFIG_REGISTRY_KEYS) do
-		registry:NotifyChange(registryKey)
+		if frame and frame.IsShown and frame:IsShown() then
+			Me.LocalizeFrame(frame)
+		end
 	end
 end
 
@@ -609,12 +599,10 @@ end
 function Me.ApplyLocalization()
 	Me.ApplyLocaleFonts()
 	Me.LocalizeStaticPopups()
-	Me.LocalizeConfigTables()
 	Me.DiscoverLocalizableFrames()
 	InstallTooltipHooks()
 	InstallDropdownHooks()
-	RefreshConfigFrames()
-	NotifyConfigChange()
+	Me.LocalizeConfigFrames()
 
 	for _, frame in pairs(Me.localizableFrames) do
 		Me.LocalizeFrame(frame)
