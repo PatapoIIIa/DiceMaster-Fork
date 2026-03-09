@@ -19,6 +19,7 @@ DiceMaster.lua
 Localization/Localization.lua
 Localization/ruRU.lua
 Localization/ukUA.lua
+Localization/BattleCoreLocale.lua
 Config.lua
 Comm.lua
 Dice.lua
@@ -75,5 +76,7 @@ Buffs.lua
 RangeRadar.lua
 Disenchant.lua
 SplashFrame.lua
+CombatData.lua
+Core.lua
 
 Ui/Ui.xml

@@ -56,9 +56,19 @@ local function CopyShallowTable(source)
 end
 
 function Me.RegisterLocale(locale, translations, style)
-	Me.localeTranslations[locale] = translations or {}
+	local existingTranslations = Me.localeTranslations[locale] or {}
+	if translations then
+		for key, value in pairs(translations) do
+			existingTranslations[key] = value
+		end
+	end
+	Me.localeTranslations[locale] = existingTranslations
 	if style then
-		Me.localeStyles[locale] = style
+		local existingStyle = Me.localeStyles[locale] or {}
+		for key, value in pairs(style) do
+			existingStyle[key] = value
+		end
+		Me.localeStyles[locale] = existingStyle
 	end
 end
 
@@ -403,6 +413,7 @@ function Me.LocalizeConfigTables()
 		Me.configOptionsCharges,
 		Me.configOptionsProgressBar,
 		Me.configOptionsManager,
+		Me.configOptionsBattleCore,
 	}
 
 	for _, configTable in ipairs(configTables) do
@@ -462,6 +473,7 @@ local function GetConfigFrames()
 		Me.configCharges,
 		Me.configProgressBar,
 		Me.configManager,
+		Me.configBattleCore,
 		Me.configProfiles,
 	}
 end
@@ -613,6 +625,7 @@ end
 function Me.ApplyLocalization()
 	Me.ApplyLocaleFonts()
 	Me.LocalizeStaticPopups()
+	Me.LocalizeConfigTables()
 	Me.DiscoverLocalizableFrames()
 	InstallTooltipHooks()
 	InstallDropdownHooks()
@@ -634,5 +647,8 @@ function Me.ApplyLocalization()
 	end
 	if Me.RefreshMoraleFrame and Me.db and Me.db.profile and Me.db.profile.morale then
 		Me.RefreshMoraleFrame(Me.db.profile.morale.count)
+	end
+	if Me.SS13Combat and Me.SS13Combat.ApplyLocalization then
+		Me.SS13Combat:ApplyLocalization()
 	end
 end

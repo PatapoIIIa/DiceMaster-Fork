@@ -28,6 +28,8 @@ local DB_DEFAULTS = {
 		enableEmojis = true;
 		enableRoundBanners = true;
 		enableMapNodes = true;
+		enableBattleCore = true;
+		enableBonkWindow = true;
 		enableTurnTracker = true;
 		talkingHeads = true;
 		healthIcons = false; 
@@ -162,7 +164,27 @@ do
 end
 
 -------------------------------------------------------------------------------
+local function GetBattleCoreEnabled()
+	if not Me.db or not Me.db.global then
+		return true
+	end
 
+	if Me.db.global.enableBattleCore == nil then
+		return Me.db.global.enableBonkWindow ~= false
+	end
+
+	return Me.db.global.enableBattleCore
+end
+
+-------------------------------------------------------------------------------
+local function SetBattleCoreEnabled( enabled )
+	Me.db.global.enableBattleCore = enabled
+	Me.db.global.enableBonkWindow = enabled
+
+	if Me.SS13Combat and Me.SS13Combat.ApplyConfig then
+		Me.SS13Combat:ApplyConfig()
+	end
+end
 
 -------------------------------------------------------------------------------
 Me.configOptions = {
@@ -419,15 +441,27 @@ Me.configOptions = {
 			end;
 			get = function( info ) return Me.db.global.enableMapNodes end;
 		};
+
+		enableBattleCore = {
+			order = 19;
+			name  = "Enable Battle Core";
+			desc  = "Show or hide the Battle Core combat windows when you target a configured NPC.";
+			type  = "toggle";
+			width = "double";
+			set = function( info, val )
+				SetBattleCoreEnabled( val )
+			end;
+			get = function( info ) return GetBattleCoreEnabled() end;
+		};
 		
 		headerFrames = {
-			order = 19;
+			order = 20;
 			name  = " ";
 			type  = "description";
 		};
 		
 		githubLink = {
-			order = 20;
+			order = 21;
 			name  = "GitHub";
 			type  = "input";
 			width = "double";
@@ -1071,6 +1105,36 @@ Me.configOptionsManager = {
 	};
 }
 
+Me.configOptionsBattleCore = {
+	type  = "group";
+	order = 1;
+	args = {
+		header = {
+			order = 0;
+			name  = "Configure the Battle Core combat client.";
+			type  = "description";
+		};
+
+		enableBattleCore = {
+			order = 10;
+			name  = "Enable Battle Core";
+			desc  = "Show or hide the Battle Core combat windows, Action Rack, Intent Tray, and target overlay.";
+			type  = "toggle";
+			width = "double";
+			set = function( info, val )
+				SetBattleCoreEnabled( val )
+			end;
+			get = function( info ) return GetBattleCoreEnabled() end;
+		};
+
+		info = {
+			order = 20;
+			name  = "Battle Core is the tactical combat client module. Disabling it hides the combat UI without touching the rest of DiceMaster.";
+			type  = "description";
+		};
+	};
+}
+
 -------------------------------------------------------------------------------
 function Me.SetupDB()
 	
@@ -1086,6 +1150,7 @@ function Me.SetupDB()
 	local charges = Me.configOptionsCharges
 	local progressbar = Me.configOptionsProgressBar
 	local dmmanager = Me.configOptionsManager
+	local battlecore = Me.configOptionsBattleCore
 	local profiles = LibStub("AceDBOptions-3.0"):GetOptionsTable( Me.db )
 	profiles.order = 500
 	 
@@ -1093,12 +1158,14 @@ function Me.SetupDB()
 	AceConfig:RegisterOptionsTable( "Health/Resource Bars", charges )	
 	AceConfig:RegisterOptionsTable( "Progress Bar", progressbar )	
 	AceConfig:RegisterOptionsTable( "Dungeon Manager", dmmanager )	
+	AceConfig:RegisterOptionsTable( "Battle Core", battlecore )	
 	AceConfig:RegisterOptionsTable( "DiceMaster Profiles", profiles )
 	
 	Me.config = AceConfigDialog:AddToBlizOptions( "DiceMaster", "DiceMaster" )
 	Me.configCharges = AceConfigDialog:AddToBlizOptions( "Health/Resource Bars", "Health/Resource Bars", "DiceMaster" )
 	Me.configProgressBar = AceConfigDialog:AddToBlizOptions( "Progress Bar", "Progress Bar", "DiceMaster" )
 	Me.configManager = AceConfigDialog:AddToBlizOptions( "Dungeon Manager", "Dungeon Manager", "DiceMaster" )
+	Me.configBattleCore = AceConfigDialog:AddToBlizOptions( "Battle Core", "Battle Core", "DiceMaster" )
 	Me.configProfiles = AceConfigDialog:AddToBlizOptions( "DiceMaster Profiles", "Profiles", "DiceMaster" )
 	
 	local function CreateLogo( frame )
@@ -1114,6 +1181,7 @@ function Me.SetupDB()
 	CreateLogo( Me.configCharges )
 	CreateLogo( Me.configProgressBar )
 	CreateLogo( Me.configManager )
+	CreateLogo( Me.configBattleCore )
 	CreateLogo( Me.configProfiles )
 end
 
@@ -1177,4 +1245,7 @@ function Me.ApplyConfig( onload )
 	Me.TraitEditor_UpdateInventory()
 	Me.ShopFrame_Update()	
 	Me.UpdatePanelTraits()
+	if Me.SS13Combat and Me.SS13Combat.ApplyConfig then
+		Me.SS13Combat:ApplyConfig()
+	end
 end
