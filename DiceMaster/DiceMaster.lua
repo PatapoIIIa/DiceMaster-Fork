@@ -169,7 +169,7 @@ StaticPopupDialogs["DICEMASTER4_SETMANAVALUE"] = {
   OnShow = function (self, data)
 	local manaType = Profile.manaType or "Mana";
 	if manaType == "RunicPower" then manaType = "Runic Power" end
-	self.Text:SetText( "Set " .. manaType .. " value:" );
+	self.Text:SetText( Me.L( "Set %s value:", Me.TranslateText( manaType )));
     self.EditBox:SetText(data.mana)
 	self.EditBox:HighlightText()
   end,
@@ -200,7 +200,7 @@ StaticPopupDialogs["DICEMASTER4_SETMANAMAX"] = {
   OnShow = function (self, data)
 	local manaType = Profile.manaType or "Mana";
 	if manaType == "RunicPower" then manaType = "Runic Power" end
-	self.Text:SetText( "Set maximum " .. manaType .. " value:" );
+	self.Text:SetText( Me.L( "Set maximum %s value:", Me.TranslateText( manaType )));
     self.EditBox:SetText(data.manaMax)
 	self.EditBox:SetNumeric()
 	self.EditBox:HighlightText()
@@ -1480,7 +1480,7 @@ function Me:OnEnable()
 				defaultY = y;
 			};
 		end
-		EditModeExpanded:RegisterFrame( frame, "|TInterface/AddOns/DiceMaster/Texture/logo:12|t " .. frame.Title, Me.Profile.framePositions[frame.Title] );
+		EditModeExpanded:RegisterFrame( frame, "|TInterface/AddOns/DiceMaster/Texture/logo:12|t " .. Me.TranslateText( frame.Title ), Me.Profile.framePositions[frame.Title] );
 	end
 	
 	if not( Me.db.global.lastSplashShown ) or not( Me.db.global.lastSplashShown == "5.2.0" ) then
@@ -1503,5 +1503,6 @@ function Me:OnEnable()
 	Me.UpdateAllMapNodes()
 	
 	Me.SetupWorldClickDetection()
+	Me.ApplyLocalization()
 end
 

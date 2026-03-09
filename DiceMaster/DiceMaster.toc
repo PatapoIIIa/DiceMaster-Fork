@@ -1,15 +1,24 @@
 ## Interface: 110200
 ## Title: DiceMaster
+## Title-ruRU: DiceMaster
+## Title-ukUA: DiceMaster
 ## IconTexture: Interface/AddOns/DiceMaster/Texture/logo
 ## Author: Skylar, Rennae
 ## Notes: A dice-rolling tabletop addon for roleplay.
+## Notes-ruRU: Настольный аддон для ролевой игры с бросками кубиков.
+## Notes-ukUA: Настільний аддон для рольової гри з кидками кубиків.
 ## Version: 5.2.1
 ## SavedVariables: DiceMaster4_Saved
 ## SavedVariablesPerCharacter: DiceMaster_TraitOne, DiceMaster_TraitTwo, DiceMaster_TraitThree, DiceMaster_TraitFour, DiceMaster_TraitFive, DiceMaster_Charges, DiceMaster_ChargesName, DiceMaster_ChargesColor, DiceMaster_ChargesMax
 ## Category-enUS: Roleplay
+## Category-ruRU: Ролевые игры
+## Category-ukUA: Рольові ігри
 
 embeds.xml
 DiceMaster.lua
+Localization/Localization.lua
+Localization/ruRU.lua
+Localization/ukUA.lua
 Config.lua
 Comm.lua
 Dice.lua
