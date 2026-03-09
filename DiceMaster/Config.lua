@@ -28,6 +28,7 @@ local DB_DEFAULTS = {
 		enableEmojis = true;
 		enableRoundBanners = true;
 		enableMapNodes = true;
+		enableBonkWindow = true;
 		enableTurnTracker = true;
 		talkingHeads = true;
 		healthIcons = false; 
@@ -419,15 +420,30 @@ Me.configOptions = {
 			end;
 			get = function( info ) return Me.db.global.enableMapNodes end;
 		};
+
+		enableBonkWindow = {
+			order = 19;
+			name  = "Enable Bonk-O-Mat 9000";
+			desc  = "Display the tactical hit-zone window when you target a configured NPC.";
+			type  = "toggle";
+			width = "double";
+			set = function( info, val )
+				Me.db.global.enableBonkWindow = val
+				if Me.SS13Combat and Me.SS13Combat.ApplyConfig then
+					Me.SS13Combat:ApplyConfig()
+				end
+			end;
+			get = function( info ) return Me.db.global.enableBonkWindow end;
+		};
 		
 		headerFrames = {
-			order = 19;
+			order = 20;
 			name  = " ";
 			type  = "description";
 		};
 		
 		githubLink = {
-			order = 20;
+			order = 21;
 			name  = "GitHub";
 			type  = "input";
 			width = "double";
@@ -1177,4 +1193,7 @@ function Me.ApplyConfig( onload )
 	Me.TraitEditor_UpdateInventory()
 	Me.ShopFrame_Update()	
 	Me.UpdatePanelTraits()
+	if Me.SS13Combat and Me.SS13Combat.ApplyConfig then
+		Me.SS13Combat:ApplyConfig()
+	end
 end

@@ -75,5 +75,6 @@ Buffs.lua
 RangeRadar.lua
 Disenchant.lua
 SplashFrame.lua
+Core.lua
 
 Ui/Ui.xml
