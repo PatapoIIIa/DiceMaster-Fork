@@ -75,6 +75,7 @@ Buffs.lua
 RangeRadar.lua
 Disenchant.lua
 SplashFrame.lua
+CombatData.lua
 Core.lua
 
 Ui/Ui.xml
