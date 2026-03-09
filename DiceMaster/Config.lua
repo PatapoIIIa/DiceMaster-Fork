@@ -15,6 +15,7 @@ local DB_DEFAULTS = {
 	
 	global = {
 		version     = nil;
+		language    = "system";
 		showUses    = true;
 		hideInspect = false; -- hide inspect frame when panel is hidden
 		hideStats   = false; -- hide stats button from inspect frame.
@@ -175,8 +176,29 @@ Me.configOptions = {
 			type  = "description";
 		};
 
-		mmicon = {
+		language = {
 			order = 1;
+			name  = "Interface Language";
+			desc  = "Choose which language DiceMaster should use. The default option follows the game client locale.";
+			type  = "select";
+			width = "double";
+			values = {
+				["system"] = "System Default";
+				["enUS"] = "English";
+				["ruRU"] = "Russian";
+				["ukUA"] = "Ukrainian";
+			};
+			set = function(info, val)
+				Me.db.global.language = val
+				Me.ScheduleLocalizationRefresh()
+			end;
+			get = function(info)
+				return Me.db.global.language or "system"
+			end;
+		};
+
+		mmicon = {
+			order = 2;
 			name  = "Enable Minimap Icon";
 			desc  = "Enable the DiceMaster minimap icon.";
 			type  = "toggle";
@@ -404,12 +426,12 @@ Me.configOptions = {
 			type  = "description";
 		};
 		
-		discordLink = {
+		githubLink = {
 			order = 20;
-			name  = "Discord";
+			name  = "GitHub";
 			type  = "input";
 			width = "double";
-			get   = function( info ) return "https://discord.gg/zCRJVQj" end;
+			get   = function( info ) return "https://github.com/PatapoIIIa/DiceMaster-Fork" end;
 		};
 	};
 }
@@ -1103,6 +1125,7 @@ function Me.OpenConfig()
 	Me.configOptionsCharges.args.chargesGroup.hidden = not Me.db.profile.charges.enable
 	Me.configOptions.args.resetUses.hidden = not Me.db.profile.showUses
 	Me.configOptionsCharges.args.healthGroup.args.healthCurrent.max = Me.db.profile.healthMax
+	Me.ApplyLocalization()
 	
 	if Me.db.profile.charges.enable and Me.db.profile.charges.symbol:find("charge") then
 		if Me.db.profile.charges.max > 8 then
@@ -1136,6 +1159,7 @@ function Me.ApplyConfig( onload )
 	Me.configOptionsCharges.args.chargesGroup.hidden = not Me.db.profile.charges.enable
 	Me.configOptions.args.resetUses.hidden = not Me.db.profile.showUses
 	Me.configOptionsCharges.args.healthGroup.args.healthCurrent.max = Me.db.profile.healthMax
+	Me.ApplyLocalization()
 
 	Me.ImportDM5Saved()
 	
