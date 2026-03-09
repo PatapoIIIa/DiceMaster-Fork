@@ -19,6 +19,7 @@ DiceMaster.lua
 Localization/Localization.lua
 Localization/ruRU.lua
 Localization/ukUA.lua
+Localization/BattleCoreLocale.lua
 Config.lua
 Comm.lua
 Dice.lua

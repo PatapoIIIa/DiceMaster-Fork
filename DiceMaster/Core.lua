@@ -26,8 +26,8 @@ local FRAME_HEIGHT = 500
 local BOARD_WIDTH = 240
 local BOARD_HEIGHT = 360
 local BUTTON_COOLDOWN_DURATION = 1.5
-local WINDOW_TITLE = "Bonk-O-Mat 9000"
-local BOARD_CAPTION = "Advanced Ouch Selector"
+local WINDOW_TITLE = "Battle Core"
+local BOARD_CAPTION = "Zone Matrix"
 local ACTION_PANEL_WIDTH = 220
 local ACTION_PANEL_GAP = 14
 local ACTION_PANEL_TITLE = "Action Rack"
@@ -43,7 +43,7 @@ local COMBAT_STATE_PANEL_GAP = 10
 local COMBAT_STATE_PANEL_TITLE = "Combat Stance"
 local DEFAULT_DEFENSE_METHOD = "parry"
 local TARGET_STATUS_DEFAULT = "Target defense: normal."
-local CHAT_PREFIX = "|cFFFFB347[Bonk-O-Mat 9000]|r "
+local CHAT_PREFIX = "|cFFFFB347[Battle Core]|r "
 local IMPACT_SPRITE = "Interface\\AddOns\\DiceMaster\\Texture\\Damage\\slashing"
 
 local RegisterAddonPrefix = C_ChatInfo and C_ChatInfo.RegisterAddonMessagePrefix or RegisterAddonMessagePrefix
@@ -170,6 +170,28 @@ local function UnpackMessage(message)
 	return fields
 end
 
+local function TranslateText(text)
+	if type(text) ~= "string" or text == "" then
+		return text
+	end
+
+	if Me and Me.TranslateText then
+		return Me.TranslateText(text)
+	end
+
+	return text
+end
+
+local function L(key, ...)
+	local translated = TranslateText(key)
+
+	if select("#", ...) > 0 then
+		return translated:format(...)
+	end
+
+	return translated
+end
+
 local function BuildCombatLogMessage(targetName, zoneLabel, intentLabel, weaponIntentLabel, result)
 	local attackLabel = intentLabel
 
@@ -185,17 +207,17 @@ local function BuildCombatLogMessage(targetName, zoneLabel, intentLabel, weaponI
 
 	if intentLabel and intentLabel ~= "" then
 		if result == "HIT" then
-			return string.format("You land %s on %s's %s.", intentLabel, targetName, zoneLabel)
+			return L("You land %s on %s's %s.", intentLabel, targetName, zoneLabel)
 		end
 
-		return string.format("You miss %s at %s's %s.", intentLabel, targetName, zoneLabel)
+		return L("You miss %s at %s's %s.", intentLabel, targetName, zoneLabel)
 	end
 
 	if result == "HIT" then
-		return string.format("You bonk %s in the %s.", targetName, zoneLabel)
+		return L("You bonk %s in the %s.", targetName, zoneLabel)
 	end
 
-	return string.format("You whiff at %s's %s.", targetName, zoneLabel)
+	return L("You whiff at %s's %s.", targetName, zoneLabel)
 end
 
 local function ToTitleCase(text)
@@ -206,6 +228,70 @@ local function ToTitleCase(text)
 	return (text:gsub("(%a)([%w']*)", function(first, rest)
 		return string.upper(first) .. string.lower(rest)
 	end))
+end
+
+function SS13:LocalizeDisplayText(text)
+	return TranslateText(text)
+end
+
+function SS13:LocalizeDisplayTitle(text)
+	return ToTitleCase(self:LocalizeDisplayText(text))
+end
+
+function SS13:GetZoneDisplayLabel(zone)
+	if not zone then
+		return nil
+	end
+
+	return self:LocalizeDisplayText(zone.label)
+end
+
+function SS13:GetZoneShortLabel(zone)
+	if not zone then
+		return nil
+	end
+
+	return self:LocalizeDisplayText(zone.short)
+end
+
+function SS13:GetIntentDisplayName(intent)
+	if not intent then
+		return nil
+	end
+
+	return self:LocalizeDisplayTitle(intent.name)
+end
+
+function SS13:GetIntentDescription(intent)
+	return intent and self:LocalizeDisplayText(intent.description) or nil
+end
+
+function SS13:GetWeaponIntentDisplayLabel(mode)
+	return mode and self:LocalizeDisplayText(mode.label) or nil
+end
+
+function SS13:GetWeaponIntentDescription(mode)
+	return mode and self:LocalizeDisplayText(mode.description) or nil
+end
+
+function SS13:GetWeaponIntentLiveSummary(mode)
+	return mode and self:LocalizeDisplayText(mode.liveSummary) or nil
+end
+
+function SS13:GetWeaponIntentFutureSummary(mode)
+	return mode and self:LocalizeDisplayText(mode.futureSummary) or nil
+end
+
+function SS13:GetProfileLabel(profile, fallback)
+	if profile and profile.label then
+		return self:LocalizeDisplayText(profile.label)
+	end
+
+	return fallback and self:LocalizeDisplayTitle(fallback) or nil
+end
+
+function SS13:GetProfileDescription(profile)
+	return profile and self:LocalizeDisplayText(profile.description) or nil
 end
 
 -------------------------------------------------------------------------------
@@ -350,7 +436,15 @@ function SS13:UpdateZoneButtonVisual(button)
 end
 
 function SS13:IsWindowEnabled()
-	return not Me.db or Me.db.global.enableBonkWindow ~= false
+	if not Me.db or not Me.db.global then
+		return true
+	end
+
+	if Me.db.global.enableBattleCore ~= nil then
+		return Me.db.global.enableBattleCore ~= false
+	end
+
+	return Me.db.global.enableBonkWindow ~= false
 end
 
 function SS13:IsOnCooldown()
@@ -478,10 +572,10 @@ function SS13:GetPrimaryIntentBucket(profile)
 	end
 
 	if self:IsGripActiveForProfile(profile) then
-		return { label = "Grip", intentIDs = profile.grippedIntents }
+		return { label = L("Grip"), intentIDs = profile.grippedIntents }
 	end
 
-	return { label = "Base", intentIDs = profile.defaultIntents }
+	return { label = L("Base"), intentIDs = profile.defaultIntents }
 end
 
 function SS13:GetActiveIntentBuckets(profile)
@@ -497,7 +591,7 @@ function SS13:GetActiveIntentBuckets(profile)
 	end
 
 	if self:IsAlternateIntentSetActive(profile) then
-		buckets[#buckets + 1] = { label = "Alt", intentIDs = profile.alternateIntents }
+		buckets[#buckets + 1] = { label = L("Alt"), intentIDs = profile.alternateIntents }
 	end
 
 	return buckets
@@ -531,12 +625,12 @@ end
 
 function SS13:GetSelectedIntentLabel()
 	local intent = self:GetCombatIntent(self.selectedIntentID)
-	return intent and ToTitleCase(intent.name) or nil
+	return intent and self:GetIntentDisplayName(intent) or nil
 end
 
 function SS13:GetSelectedWeaponIntentLabel()
 	local mode = self:GetWeaponIntentMode(self.selectedWeaponIntentModeID)
-	return mode and mode.label or nil
+	return mode and self:GetWeaponIntentDisplayLabel(mode) or nil
 end
 
 function SS13:GetAttackSelection()
@@ -558,10 +652,10 @@ function SS13:BuildActionIntentContext(intentID, weaponIntentModeID)
 	return {
 		intentID = intentID,
 		intent = intent,
-		intentLabel = ToTitleCase(intent.name),
+		intentLabel = self:GetIntentDisplayName(intent),
 		weaponIntentModeID = weaponIntentModeID,
 		weaponIntentMode = weaponIntentMode,
-		weaponIntentLabel = weaponIntentMode.label,
+		weaponIntentLabel = self:GetWeaponIntentDisplayLabel(weaponIntentMode),
 		accuracyModifier = (intent.accuracyModifier or 0) + (weaponIntentMode.accuracyModifier or 0),
 		cooldownMultiplier = weaponIntentMode.cooldownMultiplier or 1,
 		cooldownModifier = weaponIntentMode.cooldownModifier or 0,
@@ -659,7 +753,7 @@ end
 
 function SS13:CanApplyFint(attackerName, mode)
 	if not mode then
-		return false, "Fint mode is unavailable."
+		return false, L("Fint mode is unavailable.")
 	end
 
 	if self.fintQualificationResolver then
@@ -689,7 +783,7 @@ function SS13:CanApplyFint(attackerName, mode)
 		local resolvedIntelligence = intelligenceValue or 0
 
 		if resolvedMastery < requiredMastery or resolvedIntelligence < requiredIntelligence then
-			return false, string.format(
+			return false, L(
 				"Fint requires Mastery %d and Intelligence %d.",
 				requiredMastery,
 				requiredIntelligence
@@ -706,20 +800,20 @@ function SS13:AddWeaponIntentTooltipDetails(tooltip, mode)
 	end
 
 	if mode.rightClickAction then
-		tooltip:AddLine("Special: right-click the doll while this mode is selected.", 0.98, 0.88, 0.62, true)
+		tooltip:AddLine(L("Special: right-click the doll while this mode is selected."), 0.98, 0.88, 0.62, true)
 	end
 
 	if mode.liveSummary and mode.liveSummary ~= "" then
-		tooltip:AddLine("Live: " .. mode.liveSummary, 0.74, 0.94, 0.78, true)
+		tooltip:AddLine(L("Live: %s", self:GetWeaponIntentLiveSummary(mode)), 0.74, 0.94, 0.78, true)
 	end
 
 	if mode.futureSummary and mode.futureSummary ~= "" then
-		tooltip:AddLine("Future: " .. mode.futureSummary, 0.72, 0.84, 0.98, true)
+		tooltip:AddLine(L("Future: %s", self:GetWeaponIntentFutureSummary(mode)), 0.72, 0.84, 0.98, true)
 	end
 
 	if mode.requiredMastery or mode.requiredIntelligence then
 		tooltip:AddLine(
-			string.format(
+			L(
 				"Requirement: mastery %s, intelligence %s.",
 				mode.requiredMastery or "?",
 				mode.requiredIntelligence or "?"
@@ -808,11 +902,11 @@ function SS13:GetTargetStatusText(guid)
 	if self:HasActiveFint(guid) then
 		local state = self.targetStates[guid]
 		local secondsLeft = self:GetFintRemaining(guid)
-		local attacker = state and state.fintBy or "Someone"
-		return string.format("|cffc8a8ffFint lock|r by %s: no dodge/parry for %.1fs", attacker, secondsLeft)
+		local attacker = state and state.fintBy or L("Someone")
+		return L("|cffc8a8ffFint lock|r by %s: no dodge/parry for %.1fs", attacker, secondsLeft)
 	end
 
-	return TARGET_STATUS_DEFAULT
+	return L(TARGET_STATUS_DEFAULT)
 end
 
 function SS13:UpdateTargetStatusText()
@@ -821,7 +915,7 @@ function SS13:UpdateTargetStatusText()
 	end
 
 	if not self.currentTargetGUID then
-		self.frame.TargetStatusText:SetText(TARGET_STATUS_DEFAULT)
+		self.frame.TargetStatusText:SetText(L(TARGET_STATUS_DEFAULT))
 		return
 	end
 
@@ -845,10 +939,10 @@ end
 
 function SS13:GetProfileDisplayLabel(profileID, profile)
 	if not profile then
-		return ToTitleCase(profileID)
+		return self:LocalizeDisplayTitle(profileID)
 	end
 
-	local label = profile.label or ToTitleCase(profileID)
+	local label = self:GetProfileLabel(profile, profileID)
 
 	if self:ProfileSupportsGrip(profile) then
 		label = label .. " (D)"
@@ -926,9 +1020,9 @@ function SS13:RefreshActionRackVisuals()
 		if profile then
 			local stateLabel = self:GetProfileStateLabel(profile)
 			local suffix = stateLabel and (" [" .. stateLabel .. "]") or ""
-			self.frame.ActionPanel.Subtitle:SetText("Current: " .. self:GetProfileDisplayLabel(self.selectedProfileID, profile) .. suffix)
+			self.frame.ActionPanel.Subtitle:SetText(L("Current: %s", self:GetProfileDisplayLabel(self.selectedProfileID, profile) .. suffix))
 		else
-			self.frame.ActionPanel.Subtitle:SetText(ACTION_PANEL_HINT)
+			self.frame.ActionPanel.Subtitle:SetText(L(ACTION_PANEL_HINT))
 		end
 	end
 end
@@ -996,17 +1090,17 @@ function SS13:UpdateIntentPanelSubtitle()
 	end
 
 	if not profile then
-		self.frame.IntentPanel.Subtitle:SetText("Pick a profile in Action Rack.")
+		self.frame.IntentPanel.Subtitle:SetText(L("Pick a profile in Action Rack."))
 	elseif selectedIntentLabel then
 		if bucketLabel then
-			self.frame.IntentPanel.Subtitle:SetText("Current: " .. selectedIntentLabel .. " [" .. bucketLabel .. "]")
+			self.frame.IntentPanel.Subtitle:SetText(L("Current: %s [%s]", selectedIntentLabel, bucketLabel))
 		else
-			self.frame.IntentPanel.Subtitle:SetText("Current: " .. selectedIntentLabel)
+			self.frame.IntentPanel.Subtitle:SetText(L("Current: %s", selectedIntentLabel))
 		end
 	else
 		local stateLabel = self:GetProfileStateLabel(profile)
-		local prefix = stateLabel and (stateLabel .. " sets") or "set"
-		self.frame.IntentPanel.Subtitle:SetText("Pick an intent from the " .. prefix .. ".")
+		local prefix = stateLabel and L("%s sets", stateLabel) or L("set")
+		self.frame.IntentPanel.Subtitle:SetText(L("Pick an intent from the %s.", prefix))
 	end
 end
 
@@ -1066,10 +1160,10 @@ function SS13:AcquireIntentButton(index)
 
 			local intent = SS13:GetCombatIntent(intentButton.intentID)
 			GameTooltip:SetOwner(intentButton, "ANCHOR_RIGHT")
-			GameTooltip:SetText(intent and ToTitleCase(intent.name) or "Intent")
+			GameTooltip:SetText(intent and SS13:GetIntentDisplayName(intent) or L("Intent"))
 
 			if intent and intent.description and intent.description ~= "" then
-				GameTooltip:AddLine(intent.description, 0.8, 0.8, 0.8, true)
+				GameTooltip:AddLine(SS13:GetIntentDescription(intent), 0.8, 0.8, 0.8, true)
 			end
 
 			GameTooltip:Show()
@@ -1126,7 +1220,7 @@ function SS13:RefreshIntentPanel()
 		panel.EmptyText:SetWidth(INTENT_PANEL_WIDTH - 24)
 		panel.EmptyText:SetJustifyH("LEFT")
 		panel.EmptyText:SetJustifyV("TOP")
-		panel.EmptyText:SetText("No profile selected.")
+		panel.EmptyText:SetText(L("No profile selected."))
 		panel.EmptyText:Show()
 		return
 	end
@@ -1138,7 +1232,7 @@ function SS13:RefreshIntentPanel()
 		panel.EmptyText:SetWidth(INTENT_PANEL_WIDTH - 24)
 		panel.EmptyText:SetJustifyH("LEFT")
 		panel.EmptyText:SetJustifyV("TOP")
-		panel.EmptyText:SetText("No intents are available for this state.")
+		panel.EmptyText:SetText(L("No intents are available for this state."))
 		panel.EmptyText:Show()
 		return
 	end
@@ -1173,7 +1267,7 @@ function SS13:RefreshIntentPanel()
 					button:ClearAllPoints()
 					button:SetPoint("TOPLEFT", anchorRegion, "BOTTOMLEFT", 0, -2)
 					button.intentID = intentID
-					button.Label:SetText(intent and ToTitleCase(intent.name) or ToTitleCase(string.gsub(intentID, "_", " ")))
+					button.Label:SetText(intent and self:GetIntentDisplayName(intent) or self:LocalizeDisplayTitle(string.gsub(intentID, "_", " ")))
 					button:Show()
 					self:UpdateIntentButtonVisual(button)
 					anchorRegion = button
@@ -1254,11 +1348,11 @@ function SS13:RefreshWeaponIntentPanelVisuals()
 		local modeLabel = self:GetSelectedWeaponIntentLabel()
 
 		if intentLabel and modeLabel then
-			self.frame.WeaponIntentPanel.Subtitle:SetText(string.format("Current: %s for %s", modeLabel, intentLabel))
+			self.frame.WeaponIntentPanel.Subtitle:SetText(L("Current: %s for %s", modeLabel, intentLabel))
 		elseif modeLabel then
-			self.frame.WeaponIntentPanel.Subtitle:SetText("Current: " .. modeLabel)
+			self.frame.WeaponIntentPanel.Subtitle:SetText(L("Current: %s", modeLabel))
 		else
-			self.frame.WeaponIntentPanel.Subtitle:SetText("Pick a weapon intent.")
+			self.frame.WeaponIntentPanel.Subtitle:SetText(L("Pick a weapon intent."))
 		end
 	end
 end
@@ -1277,14 +1371,14 @@ end
 
 function SS13:RequestWeaponIntentFint(modeID, mode, zoneKey)
 	if not self.currentTargetGUID then
-		self:SetResultText("Target an NPC before using Fint.", "|cffffd166")
+		self:SetResultText(L("Target an NPC before using Fint."), "|cffffd166")
 		return false
 	end
 
 	local canUse, reason = self:CanApplyFint(self:GetPlayerName(), mode)
 
 	if not canUse then
-		self:SetResultText(reason or "Not enough mastery or intelligence for Fint.", "|cffff6060")
+		self:SetResultText(reason or L("Not enough mastery or intelligence for Fint."), "|cffff6060")
 		return false
 	end
 
@@ -1293,13 +1387,13 @@ function SS13:RequestWeaponIntentFint(modeID, mode, zoneKey)
 	elseif SendAddon then
 		local payload = PackMessage("REQ_FINT", self.currentTargetGUID, modeID)
 		SendAddon(PREFIX, payload, CHANNEL)
-		self:SetResultText("REQ_FINT: " .. (self.currentTargetName or "target"), "|cffc8c8ff")
+		self:SetResultText(L("REQ_FINT: %s", self.currentTargetName or L("target")), "|cffc8c8ff")
 
 		if self:IsAuthorityPlayer() then
 			self:HandleFintRequest(UnpackMessage(payload), self:GetPlayerName())
 		end
 	else
-		self:SetResultText("Addon transport is unavailable.", "|cffff6060")
+		self:SetResultText(L("Addon transport is unavailable."), "|cffff6060")
 		return false
 	end
 
@@ -1319,7 +1413,7 @@ function SS13:ActivateWeaponIntentSpecial(modeID, zoneKey)
 		return self:RequestWeaponIntentFint(resolvedModeID, mode, zoneKey)
 	end
 
-	self:SetResultText("This weapon special is not wired yet.", "|cffffd166")
+	self:SetResultText(L("This weapon special is not wired yet."), "|cffffd166")
 	return false
 end
 
@@ -1349,7 +1443,7 @@ function SS13:CreateWeaponIntentPanel(parent)
 
 	local title = panel:CreateFontString(nil, "OVERLAY", "GameFontHighlightLarge")
 	title:SetPoint("TOP", 0, -14)
-	title:SetText(WEAPON_INTENT_PANEL_TITLE)
+	title:SetText(L(WEAPON_INTENT_PANEL_TITLE))
 	panel.Title = title
 
 	local subtitle = panel:CreateFontString(nil, "OVERLAY", "GameFontDisableSmall")
@@ -1387,7 +1481,7 @@ function SS13:CreateWeaponIntentPanel(parent)
 				label:SetPoint("BOTTOMRIGHT", -6, 4)
 				label:SetJustifyH("LEFT")
 				label:SetJustifyV("MIDDLE")
-				label:SetText(modeData.label)
+				label:SetText(SS13:GetWeaponIntentDisplayLabel(modeData))
 				button.Label = label
 
 				button:SetScript("OnEnter", function(modeButton)
@@ -1395,8 +1489,8 @@ function SS13:CreateWeaponIntentPanel(parent)
 					SS13:UpdateWeaponIntentButtonVisual(modeButton)
 
 					GameTooltip:SetOwner(modeButton, "ANCHOR_RIGHT")
-					GameTooltip:SetText(modeData.label)
-					GameTooltip:AddLine(modeData.description or "", 0.8, 0.8, 0.8, true)
+					GameTooltip:SetText(SS13:GetWeaponIntentDisplayLabel(modeData))
+					GameTooltip:AddLine(SS13:GetWeaponIntentDescription(modeData) or "", 0.8, 0.8, 0.8, true)
 					SS13:AddWeaponIntentTooltipDetails(GameTooltip, modeData)
 					GameTooltip:Show()
 				end)
@@ -1435,9 +1529,13 @@ function SS13:UpdateCombatStatePanelVisuals()
 	local modeLabel
 
 	if self.combatModeEnabled then
-		modeLabel = "Combat Mode: " .. ToTitleCase(self.selectedDefenseMethod or DEFAULT_DEFENSE_METHOD)
+		if (self.selectedDefenseMethod or DEFAULT_DEFENSE_METHOD) == "dodge" then
+			modeLabel = L("Combat Mode: Dodge")
+		else
+			modeLabel = L("Combat Mode: Parry")
+		end
 	else
-		modeLabel = "Combat Mode: Body Hits"
+		modeLabel = L("Combat Mode: Body Hits")
 	end
 
 	panel.Subtitle:SetText(modeLabel)
@@ -1447,12 +1545,12 @@ function SS13:UpdateCombatStatePanelVisuals()
 			panel.ModeButton:SetBackdropColor(0.22, 0.28, 0.14, 0.96)
 			panel.ModeButton:SetBackdropBorderColor(0.82, 0.96, 0.58, 1.0)
 			panel.ModeButton.Label:SetTextColor(0.96, 1.0, 0.90)
-			panel.ModeButton.Label:SetText("Combat: On")
+			panel.ModeButton.Label:SetText(L("Combat: On"))
 		else
 			panel.ModeButton:SetBackdropColor(0.18, 0.10, 0.10, 0.96)
 			panel.ModeButton:SetBackdropBorderColor(0.80, 0.52, 0.52, 1.0)
 			panel.ModeButton.Label:SetTextColor(1.0, 0.90, 0.90)
-			panel.ModeButton.Label:SetText("Combat: Off")
+			panel.ModeButton.Label:SetText(L("Combat: Off"))
 		end
 	end
 
@@ -1540,7 +1638,7 @@ function SS13:CreateCombatStatePanel(parent)
 
 	local title = panel:CreateFontString(nil, "OVERLAY", "GameFontHighlightLarge")
 	title:SetPoint("TOP", 0, -12)
-	title:SetText(COMBAT_STATE_PANEL_TITLE)
+	title:SetText(L(COMBAT_STATE_PANEL_TITLE))
 	panel.Title = title
 
 	local subtitle = panel:CreateFontString(nil, "OVERLAY", "GameFontDisableSmall")
@@ -1549,15 +1647,15 @@ function SS13:CreateCombatStatePanel(parent)
 	subtitle:SetJustifyH("CENTER")
 	panel.Subtitle = subtitle
 
-	local modeButton = self:CreateCombatStateButton(panel, ACTION_PANEL_WIDTH - 24, 26, "Combat: Off")
+	local modeButton = self:CreateCombatStateButton(panel, ACTION_PANEL_WIDTH - 24, 26, L("Combat: Off"))
 	modeButton:SetPoint("TOPLEFT", 12, -48)
 	modeButton:SetScript("OnClick", function()
 		SS13:SetCombatModeEnabled(not SS13.combatModeEnabled)
 	end)
 	modeButton:SetScript("OnEnter", function()
 		GameTooltip:SetOwner(modeButton, "ANCHOR_RIGHT")
-		GameTooltip:SetText("Combat Mode")
-		GameTooltip:AddLine("When disabled, you take hits with the body instead of using active defense.", 0.8, 0.8, 0.8, true)
+		GameTooltip:SetText(L("Combat Mode"))
+		GameTooltip:AddLine(L("When disabled, you take hits with the body instead of using active defense."), 0.8, 0.8, 0.8, true)
 		GameTooltip:Show()
 	end)
 	modeButton:SetScript("OnLeave", function()
@@ -1565,7 +1663,7 @@ function SS13:CreateCombatStatePanel(parent)
 	end)
 	panel.ModeButton = modeButton
 
-	local parryButton = self:CreateCombatStateButton(panel, (ACTION_PANEL_WIDTH - 30) / 2, 24, "Parry")
+	local parryButton = self:CreateCombatStateButton(panel, (ACTION_PANEL_WIDTH - 30) / 2, 24, L("Parry"))
 	parryButton:SetPoint("TOPLEFT", modeButton, "BOTTOMLEFT", 0, -6)
 	parryButton.defenseMode = "parry"
 	parryButton:SetScript("OnClick", function()
@@ -1573,8 +1671,8 @@ function SS13:CreateCombatStatePanel(parent)
 	end)
 	parryButton:SetScript("OnEnter", function()
 		GameTooltip:SetOwner(parryButton, "ANCHOR_RIGHT")
-		GameTooltip:SetText("Parry")
-		GameTooltip:AddLine("Preferred active defense while combat mode is enabled.", 0.8, 0.8, 0.8, true)
+		GameTooltip:SetText(L("Parry"))
+		GameTooltip:AddLine(L("Preferred active defense while combat mode is enabled."), 0.8, 0.8, 0.8, true)
 		GameTooltip:Show()
 	end)
 	parryButton:SetScript("OnLeave", function()
@@ -1582,7 +1680,7 @@ function SS13:CreateCombatStatePanel(parent)
 	end)
 	panel.ParryButton = parryButton
 
-	local dodgeButton = self:CreateCombatStateButton(panel, (ACTION_PANEL_WIDTH - 30) / 2, 24, "Dodge")
+	local dodgeButton = self:CreateCombatStateButton(panel, (ACTION_PANEL_WIDTH - 30) / 2, 24, L("Dodge"))
 	dodgeButton:SetPoint("TOPRIGHT", modeButton, "BOTTOMRIGHT", 0, -6)
 	dodgeButton.defenseMode = "dodge"
 	dodgeButton:SetScript("OnClick", function()
@@ -1590,8 +1688,8 @@ function SS13:CreateCombatStatePanel(parent)
 	end)
 	dodgeButton:SetScript("OnEnter", function()
 		GameTooltip:SetOwner(dodgeButton, "ANCHOR_RIGHT")
-		GameTooltip:SetText("Dodge")
-		GameTooltip:AddLine("Preferred active defense while combat mode is enabled.", 0.8, 0.8, 0.8, true)
+		GameTooltip:SetText(L("Dodge"))
+		GameTooltip:AddLine(L("Preferred active defense while combat mode is enabled."), 0.8, 0.8, 0.8, true)
 		GameTooltip:Show()
 	end)
 	dodgeButton:SetScript("OnLeave", function()
@@ -1634,7 +1732,7 @@ function SS13:CreateIntentPanel(parent)
 
 	local title = panel:CreateFontString(nil, "OVERLAY", "GameFontHighlightLarge")
 	title:SetPoint("TOP", 0, -14)
-	title:SetText(INTENT_PANEL_TITLE)
+	title:SetText(L(INTENT_PANEL_TITLE))
 	panel.Title = title
 
 	local subtitle = panel:CreateFontString(nil, "OVERLAY", "GameFontDisableSmall")
@@ -1674,14 +1772,14 @@ function SS13:CreateActionPanel(parent)
 
 	local title = panel:CreateFontString(nil, "OVERLAY", "GameFontHighlightLarge")
 	title:SetPoint("TOP", 0, -14)
-	title:SetText(ACTION_PANEL_TITLE)
+	title:SetText(L(ACTION_PANEL_TITLE))
 	panel.Title = title
 
 	local subtitle = panel:CreateFontString(nil, "OVERLAY", "GameFontDisableSmall")
 	subtitle:SetPoint("TOP", title, "BOTTOM", 0, -8)
 	subtitle:SetWidth(ACTION_PANEL_WIDTH - 28)
 	subtitle:SetJustifyH("CENTER")
-	subtitle:SetText(ACTION_PANEL_HINT)
+	subtitle:SetText(L(ACTION_PANEL_HINT))
 	panel.Subtitle = subtitle
 
 	self.actionRackButtons = self.actionRackButtons or {}
@@ -1725,11 +1823,11 @@ function SS13:CreateActionPanel(parent)
 					GameTooltip:SetText(SS13:GetProfileDisplayLabel(profileKey, profileData))
 
 					if profileData.description and profileData.description ~= "" then
-						GameTooltip:AddLine(profileData.description, 0.8, 0.8, 0.8, true)
+						GameTooltip:AddLine(SS13:GetProfileDescription(profileData), 0.8, 0.8, 0.8, true)
 					end
 
 					if SS13:ProfileSupportsGrip(profileData) then
-						GameTooltip:AddLine("Click the same weapon again to toggle Grip.", 0.98, 0.88, 0.62, true)
+						GameTooltip:AddLine(L("Click the same weapon again to toggle Grip."), 0.98, 0.88, 0.62, true)
 					end
 
 					GameTooltip:Show()
@@ -1793,7 +1891,7 @@ function SS13:CreateZoneButtons(parent)
 		label:SetPoint("BOTTOMRIGHT", -3, 3)
 		label:SetJustifyH("CENTER")
 		label:SetJustifyV("MIDDLE")
-		label:SetText(zone.short)
+		label:SetText(self:GetZoneShortLabel(zone))
 		button.Label = label
 
 		local cooldownFill = button:CreateTexture(nil, "ARTWORK")
@@ -1811,10 +1909,10 @@ function SS13:CreateZoneButtons(parent)
 			local hasWeaponSpecial = SS13:GetWeaponIntentSpecialAction(SS13.selectedWeaponIntentModeID)
 
 			GameTooltip:SetOwner(zoneButton, "ANCHOR_RIGHT")
-			GameTooltip:SetText(zone.label)
-			GameTooltip:AddLine("Left-click: attack this zone.", 0.8, 0.8, 0.8, true)
+			GameTooltip:SetText(SS13:GetZoneDisplayLabel(zone))
+			GameTooltip:AddLine(L("Left-click: attack this zone."), 0.8, 0.8, 0.8, true)
 			if hasWeaponSpecial then
-				GameTooltip:AddLine("Right-click: use the selected weapon special on the target.", 0.98, 0.88, 0.62, true)
+				GameTooltip:AddLine(L("Right-click: use the selected weapon special on the target."), 0.98, 0.88, 0.62, true)
 			end
 			GameTooltip:Show()
 		end)
@@ -1863,24 +1961,24 @@ function SS13:CreateCombatFrame()
 
 	local title = frame:CreateFontString(nil, "OVERLAY", "GameFontHighlightLarge")
 	title:SetPoint("TOP", 0, -14)
-	title:SetText(WINDOW_TITLE)
+	title:SetText(L(WINDOW_TITLE))
 	frame.Title = title
 
 	local roleText = frame:CreateFontString(nil, "OVERLAY", "GameFontNormalSmall")
 	roleText:SetPoint("TOP", title, "BOTTOM", 0, -8)
-	roleText:SetText("Mode: Client")
+	roleText:SetText(L("Mode: Client"))
 	frame.RoleText = roleText
 
 	local targetText = frame:CreateFontString(nil, "OVERLAY", "GameFontNormal")
 	targetText:SetPoint("TOP", roleText, "BOTTOM", 0, -10)
-	targetText:SetText("Target: none")
+	targetText:SetText(L("Target: none"))
 	frame.TargetText = targetText
 
 	local targetStatusText = frame:CreateFontString(nil, "OVERLAY", "GameFontDisableSmall")
 	targetStatusText:SetPoint("TOP", targetText, "BOTTOM", 0, -6)
 	targetStatusText:SetWidth(FRAME_WIDTH - 36)
 	targetStatusText:SetJustifyH("CENTER")
-	targetStatusText:SetText(TARGET_STATUS_DEFAULT)
+	targetStatusText:SetText(L(TARGET_STATUS_DEFAULT))
 	frame.TargetStatusText = targetStatusText
 
 	local board = CreateFrame("Frame", nil, frame, BackdropTemplateType)
@@ -1900,7 +1998,7 @@ function SS13:CreateCombatFrame()
 
 	local boardCaption = board:CreateFontString(nil, "OVERLAY", "GameFontDisableSmall")
 	boardCaption:SetPoint("TOP", 0, -8)
-	boardCaption:SetText(BOARD_CAPTION)
+	boardCaption:SetText(L(BOARD_CAPTION))
 	board.Caption = boardCaption
 	frame.Board = board
 
@@ -1908,14 +2006,14 @@ function SS13:CreateCombatFrame()
 	hintText:SetPoint("TOP", board, "BOTTOM", 0, -10)
 	hintText:SetWidth(FRAME_WIDTH - 36)
 	hintText:SetJustifyH("CENTER")
-	hintText:SetText("Click a zone square to attack.")
+	hintText:SetText(L("Click a zone square to attack."))
 	frame.HintText = hintText
 
 	local resultText = frame:CreateFontString(nil, "OVERLAY", "GameFontHighlightSmall")
 	resultText:SetPoint("TOP", hintText, "BOTTOM", 0, -10)
 	resultText:SetWidth(FRAME_WIDTH - 36)
 	resultText:SetJustifyH("CENTER")
-	resultText:SetText("Awaiting target.")
+	resultText:SetText(L("Awaiting target."))
 	frame.ResultText = resultText
 
 	self.frame = frame
@@ -1941,14 +2039,14 @@ function SS13:UpdateRoleText()
 	end
 
 	if not self:CanUsePartyTransport() then
-		self.frame.RoleText:SetText("|cff8dd6ffMode: Self-Authoritative|r")
-		self.frame.HintText:SetText("Pick a profile and intent, then LMB a zone to attack or RMB the doll for a weapon special.")
+		self.frame.RoleText:SetText(L("|cff8dd6ffMode: Self-Authoritative|r"))
+		self.frame.HintText:SetText(L("Pick a profile and intent, then LMB a zone to attack or RMB the doll for a weapon special."))
 	elseif self:IsAuthorityPlayer() then
-		self.frame.RoleText:SetText("|cff7dff7dMode: GM Server|r")
-		self.frame.HintText:SetText("Pick a profile and intent, then LMB a zone to attack or RMB the doll for a weapon special.")
+		self.frame.RoleText:SetText(L("|cff7dff7dMode: GM Server|r"))
+		self.frame.HintText:SetText(L("Pick a profile and intent, then LMB a zone to attack or RMB the doll for a weapon special."))
 	else
-		self.frame.RoleText:SetText("|cffffd166Mode: Client|r")
-		self.frame.HintText:SetText("Pick a profile and intent, then LMB a zone to attack or RMB the doll for a weapon special.")
+		self.frame.RoleText:SetText(L("|cffffd166Mode: Client|r"))
+		self.frame.HintText:SetText(L("Pick a profile and intent, then LMB a zone to attack or RMB the doll for a weapon special."))
 	end
 end
 
@@ -1966,22 +2064,22 @@ function SS13:RefreshTargetFrame()
 
 	if self:IsConfiguredTarget("target") then
 		self.currentTargetGUID = UnitGUID("target")
-		self.currentTargetName = ShortName(GetUnitName("target", true) or UnitName("target")) or "Unknown"
+		self.currentTargetName = ShortName(GetUnitName("target", true) or UnitName("target")) or L("Unknown")
 
 		if previousTargetGUID ~= self.currentTargetGUID then
 			self:SetSelectedZone(nil)
 		end
 
-		self.frame.TargetText:SetText("Target: " .. self.currentTargetName)
+		self.frame.TargetText:SetText(L("Target: %s", self.currentTargetName))
 		self:UpdateTargetStatusText()
 		self.frame:Show()
 	else
 		self.currentTargetGUID = nil
 		self.currentTargetName = nil
 		self:SetSelectedZone(nil)
-		self.frame.TargetText:SetText("Target: none")
+		self.frame.TargetText:SetText(L("Target: none"))
 		self:UpdateTargetStatusText()
-		self:SetResultText("Awaiting configured NPC target.")
+		self:SetResultText(L("Awaiting configured NPC target."))
 		self.frame:Hide()
 	end
 end
@@ -1992,12 +2090,12 @@ function SS13:OnZoneButtonClick(zone)
 	end
 
 	if not self.selectedIntentID then
-		self:SetResultText("Pick an intent in Intent Tray first.", "|cffffd166")
+		self:SetResultText(L("Pick an intent in Intent Tray first."), "|cffffd166")
 		return
 	end
 
 	if not self.selectedWeaponIntentModeID then
-		self:SetResultText("Pick a weapon intent first.", "|cffffd166")
+		self:SetResultText(L("Pick a weapon intent first."), "|cffffd166")
 		return
 	end
 
@@ -2013,13 +2111,13 @@ function SS13:OnZoneButtonRightClick(zone)
 	end
 
 	if not self.selectedWeaponIntentModeID then
-		self:SetResultText("Pick a weapon intent first.", "|cffffd166")
+		self:SetResultText(L("Pick a weapon intent first."), "|cffffd166")
 		return
 	end
 
 	if not self:GetWeaponIntentSpecialAction(self.selectedWeaponIntentModeID) then
-		local modeLabel = self:GetSelectedWeaponIntentLabel() or "current mode"
-		self:SetResultText("No special effect is available for " .. modeLabel .. ".", "|cffffd166")
+		local modeLabel = self:GetSelectedWeaponIntentLabel() or L("current mode")
+		self:SetResultText(L("No special effect is available for %s.", modeLabel), "|cffffd166")
 		return
 	end
 
@@ -2034,27 +2132,27 @@ end
 function SS13:SendAttackRequest(targetGUID, zoneKey, intentID, weaponIntentModeID)
 	local zone = self.ZonesByKey[zoneKey]
 	local actionContext = self:BuildActionIntentContext(intentID, weaponIntentModeID)
-	local intentLabel = actionContext and actionContext.intentLabel or "Intent"
-	local weaponIntentLabel = actionContext and actionContext.weaponIntentLabel or "Weapon Intent"
+	local intentLabel = actionContext and actionContext.intentLabel or L("Intent")
+	local weaponIntentLabel = actionContext and actionContext.weaponIntentLabel or L("Weapon Intent")
 
 	if not zone or not actionContext then
 		return false
 	end
 
 	if not self:CanUsePartyTransport() then
-		self:SetResultText("Resolving " .. intentLabel .. " (" .. weaponIntentLabel .. ") -> " .. zone.label .. " locally.", "|cffc8c8ff")
+		self:SetResultText(L("Resolving %s (%s) -> %s locally.", intentLabel, weaponIntentLabel, self:GetZoneDisplayLabel(zone)), "|cffc8c8ff")
 		self:HandleAttackRequest({ "REQ_ATTACK", targetGUID, zoneKey, intentID, weaponIntentModeID }, self:GetPlayerName())
 		return true
 	end
 
 	if not SendAddon then
-		self:SetResultText("Addon transport is unavailable.", "|cffff6060")
+		self:SetResultText(L("Addon transport is unavailable."), "|cffff6060")
 		return false
 	end
 
 	local payload = PackMessage("REQ_ATTACK", targetGUID, zoneKey, intentID, weaponIntentModeID)
 	SendAddon(PREFIX, payload, CHANNEL)
-	self:SetResultText("REQ_ATTACK: " .. intentLabel .. " (" .. weaponIntentLabel .. ") -> " .. zone.label, "|cffc8c8ff")
+	self:SetResultText(L("REQ_ATTACK: %s (%s) -> %s", intentLabel, weaponIntentLabel, self:GetZoneDisplayLabel(zone)), "|cffc8c8ff")
 
 	-- Party leaders may not receive their own PARTY addon messages.
 	if self:IsAuthorityPlayer() then
@@ -2070,7 +2168,7 @@ end
 
 function SS13:ResolveAttackResult(zone, actionContext)
 	if not zone then
-		return "MISS", "Miss"
+		return "MISS", L("Miss")
 	end
 
 	local hitChance = zone.hitChance or 100
@@ -2080,10 +2178,10 @@ function SS13:ResolveAttackResult(zone, actionContext)
 	end
 
 	if math.random(1, 100) <= hitChance then
-		return "HIT", zone.label
+		return "HIT", self:GetZoneDisplayLabel(zone)
 	end
 
-	return "MISS", zone.label
+	return "MISS", self:GetZoneDisplayLabel(zone)
 end
 
 function SS13:HandleAttackRequest(fields, sender)
@@ -2150,7 +2248,7 @@ function SS13:HandleFintRequest(fields, sender)
 
 	if not canUse then
 		if sender == self:GetPlayerName() then
-			self:SetResultText(reason or "Fint failed qualification.", "|cffff6060")
+			self:SetResultText(reason or L("Fint failed qualification."), "|cffff6060")
 		end
 		return
 	end
@@ -2270,7 +2368,7 @@ function SS13:HandleExecutionBroadcast(fields, sender)
 
 	local targetGUID = fields[2]
 	local zoneKey = fields[3]
-	local zoneLabel = fields[4] or "Unknown Zone"
+	local zoneLabel = zone and self:GetZoneDisplayLabel(zone) or fields[4] or L("Unknown Zone")
 	local attacker = fields[5] or sender
 	local result = fields[6] or "MISS"
 	local intentID = fields[7]
@@ -2289,7 +2387,7 @@ function SS13:HandleExecutionBroadcast(fields, sender)
 		self:PlayFencingAnimation(zone.centerX, zone.centerY)
 	end
 
-	local targetLabel = self.currentTargetGUID == targetGUID and self.currentTargetName or "target"
+	local targetLabel = self.currentTargetGUID == targetGUID and self.currentTargetName or L("target")
 
 	if attacker == self:GetPlayerName() then
 		self:LogToAddonChat(BuildCombatLogMessage(targetLabel, zoneLabel, intentLabel, weaponIntentLabel, result))
@@ -2298,22 +2396,22 @@ function SS13:HandleExecutionBroadcast(fields, sender)
 	if result == "HIT" then
 		if intentLabel then
 			if weaponIntentLabel then
-				self:SetResultText(string.format("%s hit %s: %s via %s (%s)", attacker, targetLabel, zoneLabel, intentLabel, weaponIntentLabel), "|cff7dff7d")
+				self:SetResultText(L("%s hit %s: %s via %s (%s)", attacker, targetLabel, zoneLabel, intentLabel, weaponIntentLabel), "|cff7dff7d")
 			else
-				self:SetResultText(string.format("%s hit %s: %s via %s", attacker, targetLabel, zoneLabel, intentLabel), "|cff7dff7d")
+				self:SetResultText(L("%s hit %s: %s via %s", attacker, targetLabel, zoneLabel, intentLabel), "|cff7dff7d")
 			end
 		else
-			self:SetResultText(string.format("%s hit %s: %s", attacker, targetLabel, zoneLabel), "|cff7dff7d")
+			self:SetResultText(L("%s hit %s: %s", attacker, targetLabel, zoneLabel), "|cff7dff7d")
 		end
 	else
 		if intentLabel then
 			if weaponIntentLabel then
-				self:SetResultText(string.format("%s missed %s at %s with %s (%s)", attacker, targetLabel, zoneLabel, intentLabel, weaponIntentLabel), "|cffff6060")
+				self:SetResultText(L("%s missed %s at %s with %s (%s)", attacker, targetLabel, zoneLabel, intentLabel, weaponIntentLabel), "|cffff6060")
 			else
-				self:SetResultText(string.format("%s missed %s at %s with %s", attacker, targetLabel, zoneLabel, intentLabel), "|cffff6060")
+				self:SetResultText(L("%s missed %s at %s with %s", attacker, targetLabel, zoneLabel, intentLabel), "|cffff6060")
 			end
 		else
-			self:SetResultText(string.format("%s missed %s at %s", attacker, targetLabel, zoneLabel), "|cffff6060")
+			self:SetResultText(L("%s missed %s at %s", attacker, targetLabel, zoneLabel), "|cffff6060")
 		end
 	end
 end
@@ -2338,14 +2436,64 @@ function SS13:HandleFintBroadcast(fields, sender)
 	end
 
 	if attacker == self:GetPlayerName() then
-		self:LogToAddonChat(string.format("You apply a Fint lock for %.1fs.", duration))
-		self:SetResultText(string.format("%s applies Fint: no dodge/parry for %.1fs", attacker, duration), "|cffc8a8ff")
+		self:LogToAddonChat(L("You apply a Fint lock for %.1fs.", duration))
+		self:SetResultText(L("%s applies Fint: no dodge/parry for %.1fs", attacker, duration), "|cffc8a8ff")
 	elseif self.currentTargetGUID == targetGUID then
-		self:SetResultText(string.format("%s applies Fint to %s.", attacker, self.currentTargetName or "target"), "|cffc8a8ff")
+		self:SetResultText(L("%s applies Fint to %s.", attacker, self.currentTargetName or L("target")), "|cffc8a8ff")
 	end
 end
 
+function SS13:RefreshStaticTexts()
+	if not self.frame then
+		return
+	end
+
+	if self.frame.Title then
+		self.frame.Title:SetText(L(WINDOW_TITLE))
+	end
+
+	if self.frame.Board and self.frame.Board.Caption then
+		self.frame.Board.Caption:SetText(L(BOARD_CAPTION))
+	end
+
+	if self.frame.ActionPanel then
+		if self.frame.ActionPanel.Title then
+			self.frame.ActionPanel.Title:SetText(L(ACTION_PANEL_TITLE))
+		end
+		if self.frame.ActionPanel.Subtitle and not self.selectedProfileID then
+			self.frame.ActionPanel.Subtitle:SetText(L(ACTION_PANEL_HINT))
+		end
+	end
+
+	if self.frame.IntentPanel and self.frame.IntentPanel.Title then
+		self.frame.IntentPanel.Title:SetText(L(INTENT_PANEL_TITLE))
+	end
+
+	if self.frame.WeaponIntentPanel and self.frame.WeaponIntentPanel.Title then
+		self.frame.WeaponIntentPanel.Title:SetText(L(WEAPON_INTENT_PANEL_TITLE))
+	end
+
+	if self.frame.CombatStatePanel and self.frame.CombatStatePanel.Title then
+		self.frame.CombatStatePanel.Title:SetText(L(COMBAT_STATE_PANEL_TITLE))
+	end
+
+	if self.zoneButtons then
+		for _, zone in ipairs(self.ZoneLayout) do
+			local button = self.zoneButtons[zone.key]
+			if button and button.Label then
+				button.Label:SetText(self:GetZoneShortLabel(zone))
+			end
+		end
+	end
+end
+
+function SS13:ApplyLocalization()
+	self:RefreshStaticTexts()
+	self:ApplyConfig()
+end
+
 function SS13:ApplyConfig()
+	self:RefreshStaticTexts()
 	self:UpdateRoleText()
 	self:RefreshTargetFrame()
 	self:UpdateCooldownVisuals()
