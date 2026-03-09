@@ -194,11 +194,18 @@ local function LocalizeStringField(container, fieldName)
 	end
 
 	local baseKey = "__dmBase_" .. fieldName
-	if Me.GetConfiguredLocale() == "enUS" or not container[baseKey] then
-		container[baseKey] = currentValue
+	local baseValue = container[baseKey]
+	if Me.GetConfiguredLocale() == "enUS" or not baseValue then
+		baseValue = currentValue
+	else
+		local localizedBaseValue = Me.TranslateText(baseValue)
+		if currentValue ~= localizedBaseValue and currentValue ~= baseValue then
+			baseValue = currentValue
+		end
 	end
 
-	container[fieldName] = Me.TranslateText(container[baseKey])
+	container[baseKey] = baseValue
+	container[fieldName] = Me.TranslateText(baseValue)
 end
 
 local function LocalizeTextObject(textObject)
@@ -214,11 +221,18 @@ local function LocalizeTextObject(textObject)
 		return
 	end
 
-	if Me.GetConfiguredLocale() == "enUS" or not textObject.__dmBaseText then
-		textObject.__dmBaseText = currentText
+	local baseText = textObject.__dmBaseText
+	if Me.GetConfiguredLocale() == "enUS" or not baseText then
+		baseText = currentText
+	else
+		local localizedBaseText = Me.TranslateText(baseText)
+		if currentText ~= localizedBaseText and currentText ~= baseText then
+			baseText = currentText
+		end
 	end
 
-	local localizedText = Me.TranslateText(textObject.__dmBaseText)
+	textObject.__dmBaseText = baseText
+	local localizedText = Me.TranslateText(baseText)
 	if localizedText ~= currentText then
 		textObject:SetText(localizedText)
 	end
