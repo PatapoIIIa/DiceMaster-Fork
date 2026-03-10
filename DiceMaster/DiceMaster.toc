@@ -77,6 +77,8 @@ RangeRadar.lua
 Disenchant.lua
 SplashFrame.lua
 CombatData.lua
+DarkMoonIntegration.lua
+BattleCoreSessionManager.lua
 Core.lua
 
 Ui/Ui.xml

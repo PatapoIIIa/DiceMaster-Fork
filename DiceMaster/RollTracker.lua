@@ -775,6 +775,10 @@ function Me.DiceMasterRollFrame_OnLoad(self)
 		button:SetID(i)
 		button:SetPoint("TOP", _G["DiceMasterMapNodesButton"..(i-1)], "BOTTOM");
 	end
+
+	if Me.DarkMoonIntegration and Me.DarkMoonIntegration.AttachToDungeonManager then
+		Me.DarkMoonIntegration:AttachToDungeonManager(DiceMasterDarkMoonTracker)
+	end
 	
 	Me.DiceMasterRollFrame_Update()
 	--Me.UpdateAllMapNodes()

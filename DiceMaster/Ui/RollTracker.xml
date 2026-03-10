@@ -788,9 +788,9 @@
     </Anchors>
     
     <Scripts>
-      <OnLoad>
+	  <OnLoad>
 		DiceMaster4.DiceMasterRollFrame_OnLoad( self )
-		PanelTemplates_SetNumTabs(self, 4);
+		PanelTemplates_SetNumTabs(self, 5);
 	    PanelTemplates_SetTab(self, 1);
 	  </OnLoad>
 	  <OnShow>
@@ -1803,6 +1803,16 @@
 				</OnLoad>
 			</Scripts>
 		</Frame>
+
+		<Frame name="DiceMasterDarkMoonTracker" setAllPoints="true" hidden="true">
+			<Scripts>
+				<OnShow>
+					if DiceMaster4.DarkMoonIntegration then
+						DiceMaster4.DarkMoonIntegration:RefreshDungeonManager()
+					end
+				</OnShow>
+			</Scripts>
+		</Frame>
 		
 		<Button name="$parentTab1" parentKey="Tab1" useParentLevel="true" inherits="PanelTabButtonTemplate" id="1" text="Rolls">
 			<Anchors>
@@ -1815,6 +1825,7 @@
                     DiceMasterDMNotes:Hide();
 					DiceMasterDMRoster:Hide();
 					DiceMasterMapNodes:Hide();
+					DiceMasterDarkMoonTracker:Hide();
 					DiceMaster4.DiceMasterRollFrame_Update()
 					PlaySound(841)
 				</OnClick>
@@ -1832,6 +1843,7 @@
                     DiceMasterDMNotes:Show();
 					DiceMasterDMRoster:Hide();
 					DiceMasterMapNodes:Hide();
+					DiceMasterDarkMoonTracker:Hide();
 					PlaySound(841)
 				</OnClick>
 			</Scripts>
@@ -1848,6 +1860,7 @@
                     DiceMasterDMNotes:Hide();
 					DiceMasterDMRoster:Show();
 					DiceMasterMapNodes:Hide();
+					DiceMasterDarkMoonTracker:Hide();
 					PlaySound(841)
 				</OnClick>
 			</Scripts>
@@ -1864,7 +1877,28 @@
                     DiceMasterDMNotes:Hide();
 					DiceMasterDMRoster:Hide();
 					DiceMasterMapNodes:Show();
+					DiceMasterDarkMoonTracker:Hide();
 					DiceMaster4.DiceMasterMapNodes_Update();
+					PlaySound(841)
+				</OnClick>
+			</Scripts>
+		</Button>
+
+		<Button name="$parentTab5" parentKey="Tab5" useParentLevel="true" inherits="PanelTabButtonTemplate" id="5" text="DarkMoon">
+			<Anchors>
+				<Anchor point="LEFT" relativeKey="$parent.Tab4" relativePoint="RIGHT" x="-16"/>
+			</Anchors>
+			<Scripts>
+				<OnClick>
+					PanelTemplates_SetTab(DiceMasterRollFrame, 5);
+                    DiceMasterRollTracker:Hide();
+                    DiceMasterDMNotes:Hide();
+					DiceMasterDMRoster:Hide();
+					DiceMasterMapNodes:Hide();
+					DiceMasterDarkMoonTracker:Show();
+					if DiceMaster4.DarkMoonIntegration then
+						DiceMaster4.DarkMoonIntegration:RefreshDungeonManager()
+					end
 					PlaySound(841)
 				</OnClick>
 			</Scripts>
